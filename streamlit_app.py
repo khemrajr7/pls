@@ -1,9 +1,11 @@
 import streamlit as st
 from PIL import Image
 from ultralytics import YOLO
+import io
+import numpy as np
 
-model = YOLO('yolov8n.yaml')
-model = YOLO('best.pt')
+# Load the YOLO model
+model = YOLO('best.pt')  # Make sure to specify the correct path to your trained YOLO model
 
 st.title("Tomato Leaf Disease Detection")
 st.markdown("""
@@ -11,25 +13,22 @@ st.markdown("""
 Bacterial Spot, Early Blight, Healthy, Iron Deficiency, Late Blight, Leaf Mold, Leaf Miner, Mosaic Virus, Septoria, Spider Mites, Yellow Leaf Curl Virus.*
 """)
 
-uploaded_file = st.file_uploader("Choose a tomato leaf image", type=["jpg", "png"])
 
-# Add an author section
-st.sidebar.markdown("## Author")
-st.sidebar.markdown("Name: **Arix ALIMAGNIDOKPO**")
-st.sidebar.markdown("GitHub: https://github.com/Arix-ALIMAGNIDOKPO")
-st.sidebar.markdown("LinkedIn: www.linkedin.com/in/arix-alimagnidokpo-27865a276")
-st.sidebar.markdown("## For more information, please check the GitHub repository link below:")
-st.sidebar.markdown("Repository: https://github.com/Arix-ALIMAGNIDOKPO/Tomato-Leaf-Disease-Dection-using-Yolov8")
+
+# Upload file
+uploaded_file = st.file_uploader("Choose a tomato leaf image", type=["jpg", "png"])
 
 if uploaded_file is not None:
     image = Image.open(uploaded_file)
-
+    
     # Predict classes
     results = model(image)
-    # View results
-    for r in results:
-        im_array = r.plot()  # plot a BGR numpy array of predictions
-        im = Image.fromarray(im_array[..., ::-1])  # RGB PIL image
-        im.show()  # show image
-        im.save('results.jpg')  # save image
-    st.image('results.jpg', caption='Model Prediction')
+    
+    # Convert results to a format suitable for Streamlit display
+    for result in results:
+        im_array = result.plot()  # Plot a BGR numpy array of predictions
+        im = Image.fromarray(im_array[..., ::-1])  # Convert BGR to RGB
+        st.image(im, caption='Model Prediction')  # Show image with prediction
+        
+        # Optionally, you can save the image as well
+        im.save('results.jpg')
