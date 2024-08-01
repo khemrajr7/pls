@@ -6,8 +6,7 @@ import numpy as np
 # Load models
 models = {
     'Inception': tf.keras.models.load_model('inc.h5'),
-    'CNN': tf.keras.models.load_model('cnn.h5'),
-    'Sequential': tf.keras.models.load_model('seq.h5')
+    'CNN': tf.keras.models.load_model('cnn.h5')
 }
 
 # Define classes
