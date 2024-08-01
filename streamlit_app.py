@@ -5,31 +5,45 @@ from ultralytics import YOLO
 model = YOLO('yolov8n.yaml')
 model = YOLO('best.pt')
 
-st.title("Détection de maladies des feuilles de tomates")
+st.title("Tomato Leaf Disease Detection")
 st.markdown("""
-*Ce projet est une application web pour la détection des maladies courantes des feuilles de tomates. Il utilise le modèle YOLO (You Only Look Once) pour la détection d'objets. Le modèle a été formé sur un ensemble de données spécifique comprenant différentes classes de maladies des feuilles de tomates. Les classes du modèle sont les suivantes :
-Bacterial Spot (Tache bactérienne), Early Blight (Alternariose), Healthy (Sain), Iron Deficiency (Carence en fer), Late Blight (Mildiou), Leaf Mold (Moisissure des feuilles), Leaf Miner (Mineuse), Mosaic Virus (Virus mosaïque), Septoria (Septoriose), Spider Mites (Tétranyques), Yellow Leaf Curl Virus (Virus des feuilles jaunes en cuillère de la tomate).*""")
+*This project is a web application for detecting common tomato leaf diseases using the YOLO (You Only Look Once) object detection model. The model has been trained on a specific dataset containing different classes of tomato leaf diseases. The model classes include:
+Bacterial Spot, Early Blight, Healthy, Iron Deficiency, Late Blight, Leaf Mold, Leaf Miner, Mosaic Virus, Septoria, Spider Mites, Yellow Leaf Curl Virus.*
+""")
 
-uploaded_file = st.file_uploader("Choisissez une image de feuille de tomate", type=["jpg", "png"])
+uploaded_file = st.file_uploader("Choose a tomato leaf image", type=["jpg", "png"])
 
-# Ajouter une section pour l'auteur
-st.sidebar.markdown("## Auteur")
-st.sidebar.markdown("Nom :  **Arix ALIMAGNIDOKPO**")
-st.sidebar.markdown("GitHub : https://github.com/Arix-ALIMAGNIDOKPO")
-st.sidebar.markdown("LinkedIn : www.linkedin.com/in/arix-alimagnidokpo-27865a276")
-st.sidebar.markdown("## Pour plus d'informations consultez le lien du depot Github ci-dessous :")
-st.sidebar.markdown("Repository : https://github.com/Arix-ALIMAGNIDOKPO/Tomato-Leaf-Disease-Dection-using-Yolov8")
+
 
 if uploaded_file is not None:
     image = Image.open(uploaded_file)
 
-    # Prédire les classes
+    # Predict classes
     results = model(image)
+    
     # View results
     for r in results:
         im_array = r.plot()  # plot a BGR numpy array of predictions
         im = Image.fromarray(im_array[..., ::-1])  # RGB PIL image
-        im.show()  # show image
         im.save('results.jpg')  # save image
-    st.image('results.jpg', caption='Prédiction du model')
     
+    st.image('results.jpg', caption='Model Prediction')
+    
+    detected_class = results[0].names[0]  # assuming the first result is the detected class
+
+    disease_info = {
+        "Bacterial Spot": "Remedy: Use copper-based fungicides and avoid overhead watering.",
+        "Early Blight": "Remedy: Remove affected leaves and apply fungicides.",
+        "Healthy": "Your plant is healthy!",
+        "Iron Deficiency": "Remedy: Apply iron chelate to the soil.",
+        "Late Blight": "Remedy: Remove infected plants and use fungicides.",
+        "Leaf Mold": "Remedy: Improve air circulation and apply fungicides.",
+        "Leaf Miner": "Remedy: Use neem oil or insecticidal soap.",
+        "Mosaic Virus": "Remedy: Remove infected plants and control aphids.",
+        "Septoria": "Remedy: Remove affected leaves and use fungicides.",
+        "Spider Mites": "Remedy: Use insecticidal soap or horticultural oil.",
+        "Yellow Leaf Curl Virus": "Remedy: Remove infected plants and control whiteflies."
+    }
+
+    st.markdown(f"### Detected Disease: {detected_class}")
+    st.markdown(f"### Remedy: {disease_info.get(detected_class, 'No remedy available.')}")
