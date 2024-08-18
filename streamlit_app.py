@@ -145,10 +145,7 @@ if uploaded_file is not None:
             mime="image/jpeg"
         )
 
-    # Display a chart of detected diseases
-    if detected_disease_counts:
-        st.subheader("Disease Detection Summary")
-        st.bar_chart(detected_disease_counts)
+  
 
 # Add a sidebar with additional options
 st.sidebar.header("More Information")
