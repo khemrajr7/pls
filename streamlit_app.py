@@ -12,25 +12,7 @@ st.markdown("""
 Bacterial Spot, Early Blight, Healthy, Iron Deficiency, Late Blight, Leaf Mold, Leaf Miner, Mosaic Virus, Septoria, Spider Mites, Yellow Leaf Curl Virus.*
 """)
 
-# Upload file
-uploaded_file = st.file_uploader("Choose a tomato leaf image", type=["jpg", "png"])
-
-if uploaded_file is not None:
-    image = Image.open(uploaded_file)
-    
-    # Predict classes
-    results = model.predict(image)
-    
-    # Convert results to a format suitable for Streamlit display
-    for result in results:
-        im_array = result.plot()  # Plot a BGR numpy array of predictions
-        im = Image.fromarray(im_array[..., ::-1])  # Convert BGR to RGB
-        st.image(im, caption='Model Prediction')  # Show image with prediction
-        
-        # Optionally, you can save the image as well
-        im.save('results.jpg')
-
-# Now let's add the disease info and integrate other improvements
+# Disease information dictionary
 disease_info = {
     "Bacterial Spot": {
         "cause": "Caused by the bacterium Xanthomonas campestris pv. vesicatoria.",
@@ -102,19 +84,24 @@ disease_info = {
 
 def display_disease_info(detected_class):
     if detected_class in disease_info:
-        st.subheader(f"Disease Detected: {detected_class}")
-        st.markdown(f"**Cause:** {disease_info[detected_class]['cause']}")
-        st.markdown(f"**Cure:** {disease_info[detected_class]['cure']}")
-        st.markdown(f"**Prevention:** {disease_info[detected_class]['prevention']}")
-        st.markdown(f"**Chemicals:** {disease_info[detected_class]['chemicals']}")
+        st.sidebar.subheader(f"Disease Detected: {detected_class}")
+        st.sidebar.markdown(f"**Cause:** {disease_info[detected_class]['cause']}")
+        st.sidebar.markdown(f"**Cure:** {disease_info[detected_class]['cure']}")
+        st.sidebar.markdown(f"**Prevention:** {disease_info[detected_class]['prevention']}")
+        st.sidebar.markdown(f"**Chemicals:** {disease_info[detected_class]['chemicals']}")
     else:
-        st.subheader(f"Disease Detected: {detected_class}")
-        st.markdown("No information available for this disease.")
+        st.sidebar.subheader(f"Disease Detected: {detected_class}")
+        st.sidebar.markdown("No information available for this disease.")
+
+# Upload file
+uploaded_file = st.file_uploader("Choose a tomato leaf image", type=["jpg", "png"])
 
 if uploaded_file is not None:
+    image = Image.open(uploaded_file)
+    
     # Predict classes
     results = model.predict(image)
-
+    
     # Convert results to a format suitable for Streamlit display
     for result in results:
         im_array = result.plot()  # Plot a BGR numpy array of predictions
@@ -122,7 +109,24 @@ if uploaded_file is not None:
         st.image(im, caption='Model Prediction')  # Show image with prediction
         
         # Extract and display disease information
-    
+        if len(result.boxes) > 0:
+            detected_class_index = int(result.boxes[0].cls[0])  # Extract the index of the predicted class
+            detected_class = result.names.get(detected_class_index, "Unknown")  # Safely get the class name
+            display_disease_info(detected_class)
+        else:
+            st.subheader("No disease detected.")
         
         # Optionally, you can save the image as well
         im.save('results.jpg')
+
+    # Success message
+    st.success("Image processed successfully!")
+
+    # Download processed image option
+    with open("results.jpg", "rb") as file:
+        btn = st.download_button(
+            label="Download Processed Image",
+            data=file,
+            file_name="processed_image.jpg",
+            mime="image/jpeg"
+        )
