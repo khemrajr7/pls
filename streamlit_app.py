@@ -6,6 +6,8 @@ from ultralytics import YOLO
 import tempfile
 import os
 import base64
+import io
+import json
 
 # Load the YOLO model
 model = YOLO('best.pt')  # Make sure to specify the correct path to your trained YOLO model
@@ -70,10 +72,13 @@ webcam_html = """
         canvas.height = video.videoHeight;
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
         const dataUrl = canvas.toDataURL('image/png');
-        fetch('/', {
+        const jsonData = JSON.stringify({ image: dataUrl });
+        fetch('/submit', {
             method: 'POST',
-            body: JSON.stringify({ image: dataUrl }),
-            headers: { 'Content-Type': 'application/json' }
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: jsonData
         }).then(response => response.json())
           .then(data => {
               console.log(data);
@@ -85,27 +90,20 @@ webcam_html = """
 
 st.markdown(webcam_html, unsafe_allow_html=True)
 
-# Handling the image data received from JavaScript
-if "image" in st.session_state:
-    image_data = st.session_state.image
-    image_data = image_data.split(",")[1]  # Remove the data URL prefix
-    image_data = base64.b64decode(image_data)
+# Check if there's image data in the session state
+if "image_data" in st.session_state:
+    image_data = st.session_state["image_data"]
     image = Image.open(io.BytesIO(image_data))
-
-    # Save the image temporarily
-    temp_image = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
-    image.save(temp_image.name)
     
-    # Process the image with the YOLO model
+    # Display the image
     st.image(image, caption="Captured Image")
+
+    # Process the image
     processed_image = process_image(np.array(image))
     st.image(processed_image, caption="Processed Image")
 
-# Handle POST request to receive image data
-@st.experimental_memo
-def handle_post_request():
-    import json
-    if st.experimental_get_query_params().get("image"):
-        st.session_state["image"] = st.experimental_get_query_params()["image"][0]
-
-handle_post_request()
+# Handle the image data sent via POST
+if st.experimental_get_query_params().get('image'):
+    image_data_url = st.experimental_get_query_params()['image'][0]
+    image_data = base64.b64decode(image_data_url.split(",")[1])  # Remove the base64 header
+    st.session_state["image_data"] = image_data
