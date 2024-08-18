@@ -76,19 +76,23 @@ if uploaded_file is not None:
         im = Image.fromarray(im_array[..., ::-1])  # Convert BGR to RGB
         st.image(im, caption='Model Prediction')  # Show image with prediction
         
-        # Extract the predicted class
-        detected_class = result.names[result.boxes[0].cls[0]]
-        
-        # Get disease info
-        if detected_class in disease_info:
-            cure = disease_info[detected_class]["cure"]
-            info = disease_info[detected_class]["info"]
-            st.subheader(f"Disease Detected: {detected_class}")
-            st.markdown(f"**Cure:** {cure}")
-            st.markdown(f"**Additional Info:** {info}")
+        # Check if any boxes are detected
+        if len(result.boxes) > 0:
+            detected_class_index = int(result.boxes[0].cls[0])  # Extract the index of the predicted class
+            detected_class = result.names.get(detected_class_index, "Unknown")  # Safely get the class name
+            
+            # Get disease info
+            if detected_class in disease_info:
+                cure = disease_info[detected_class]["cure"]
+                info = disease_info[detected_class]["info"]
+                st.subheader(f"Disease Detected: {detected_class}")
+                st.markdown(f"**Cure:** {cure}")
+                st.markdown(f"**Additional Info:** {info}")
+            else:
+                st.subheader(f"Disease Detected: {detected_class}")
+                st.markdown("No information available for this disease.")
         else:
-            st.subheader("Disease Detected: Unknown")
-            st.markdown("No information available for this disease.")
-
+            st.subheader("No disease detected.")
+        
         # Optionally, you can save the image as well
         im.save('results.jpg')
