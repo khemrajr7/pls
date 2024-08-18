@@ -19,48 +19,8 @@ disease_info = {
         "cure": "Apply copper-based bactericides. Ensure proper crop rotation and avoid overhead watering.",
         "info": "Bacterial spot causes dark, water-soaked spots on leaves and can lead to defoliation."
     },
-    "Early Blight": {
-        "cure": "Use fungicides such as chlorothalonil or copper sprays. Remove affected leaves and practice crop rotation.",
-        "info": "Early blight appears as dark, concentric rings on older leaves, usually starting at the bottom of the plant."
-    },
-    "Healthy": {
-        "cure": "No treatment needed.",
-        "info": "The plant is healthy with no signs of disease."
-    },
-    "Iron Deficiency": {
-        "cure": "Apply iron chelates to the soil or as a foliar spray.",
-        "info": "Iron deficiency leads to yellowing between the veins of young leaves, while veins remain green."
-    },
-    "Late Blight": {
-        "cure": "Use fungicides like mancozeb or chlorothalonil. Remove and destroy infected plants.",
-        "info": "Late blight causes dark, water-soaked lesions on leaves and stems, leading to plant collapse."
-    },
-    "Leaf Mold": {
-        "cure": "Ensure good air circulation, reduce humidity, and apply fungicides if necessary.",
-        "info": "Leaf mold appears as yellow spots on the upper leaf surface and mold growth on the underside."
-    },
-    "Leaf Miner": {
-        "cure": "Use insecticides like spinosad or neem oil. Remove affected leaves.",
-        "info": "Leaf miners create winding, white trails on leaves as they feed inside the leaf tissue."
-    },
-    "Mosaic Virus": {
-        "cure": "There is no cure for mosaic virus. Remove and destroy infected plants to prevent spread.",
-        "info": "Mosaic virus causes mottled, yellow, or white patterns on leaves and stunted growth."
-    },
-    "Septoria": {
-        "cure": "Apply fungicides and remove infected leaves. Ensure good air circulation.",
-        "info": "Septoria leaf spot presents as small, circular spots with dark borders on lower leaves."
-    },
-    "Spider Mites": {
-        "cure": "Use miticides or insecticidal soaps. Maintain humidity to discourage mite infestations.",
-        "info": "Spider mites cause stippling and yellowing of leaves, often with webbing on the undersides."
-    },
-    "Yellow Leaf Curl Virus": {
-        "cure": "There is no cure. Remove and destroy infected plants. Control whiteflies to prevent spread.",
-        "info": "Yellow leaf curl virus causes yellowing and upward curling of leaves, stunted growth, and reduced yield."
-    }
+    # Add other disease information here...
 }
-
 
 # Function to process the image and make predictions
 def process_image(image):
@@ -87,14 +47,19 @@ def process_image(image):
         return im
 
 # Webcam capture function
-def capture_from_webcam(camera_index=1):
-    cap = cv2.VideoCapture(camera_index)  # Open the external webcam (index might be 1 or higher)
+def capture_from_webcam(camera_index=0):
+    cap = cv2.VideoCapture(camera_index)  # Try different indices if this doesn't work (0, 1, 2, ...)
+    
+    if not cap.isOpened():
+        st.error("Could not access the webcam. Please check the camera index or connection.")
+        return
+    
     stframe = st.empty()  # Placeholder for the video frames
 
     while True:
         ret, frame = cap.read()  # Capture frame-by-frame
         if not ret:
-            st.write("Could not access the webcam.")
+            st.error("Failed to capture image from webcam. Please try again.")
             break
         
         # Convert the frame to RGB (OpenCV captures in BGR)
@@ -122,4 +87,4 @@ if mode == "Upload Image":
         st.image(im, caption='Model Prediction')
 elif mode == "Use Webcam":
     st.text("Webcam capture mode")
-    capture_from_webcam(camera_index=1)  # Update the index to your external webcam's index
+    capture_from_webcam(camera_index=0)  # Try changing this index if it doesn't work
