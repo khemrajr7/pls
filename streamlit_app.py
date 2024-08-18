@@ -14,30 +14,6 @@ st.markdown("""
 Bacterial Spot, Early Blight, Healthy, Iron Deficiency, Late Blight, Leaf Mold, Leaf Miner, Mosaic Virus, Septoria, Spider Mites, Yellow Leaf Curl Virus.*
 """)
 
-# Function to process the image and make predictions
-def process_image(image):
-    results = model(image)
-    for result in results:
-        im_array = result.plot()  # Plot a BGR numpy array of predictions
-        im = Image.fromarray(im_array[..., ::-1])  # Convert BGR to RGB
-        
-        if len(result.boxes) > 0:
-            detected_class_index = int(result.boxes[0].cls[0])  # Extract the index of the predicted class
-            detected_class = result.names.get(detected_class_index, "Unknown")  # Safely get the class name
-            
-            if detected_class in disease_info:
-                cure = disease_info[detected_class]["cure"]
-                info = disease_info[detected_class]["info"]
-                st.subheader(f"Disease Detected: {detected_class}")
-                st.markdown(f"**Cure:** {cure}")
-                st.markdown(f"**Additional Info:** {info}")
-            else:
-                st.subheader(f"Disease Detected: {detected_class}")
-                st.markdown("No information available for this disease.")
-        else:
-            st.subheader("No disease detected.")
-        return im
-
 # Define a dictionary with disease information
 disease_info = {
     "Bacterial Spot": {
@@ -49,10 +25,14 @@ disease_info = {
 
 # HTML and JS code to access the webcam and take a photo
 webcam_html = """
-<div>
-    <video id="video" width="100%" height="100%" autoplay></video>
-    <button id="snap">Capture Image</button>
-    <canvas id="canvas" style="display:none;"></canvas>
+<div style="display: flex; justify-content: space-between;">
+    <div>
+        <video id="video" width="300" height="300" autoplay></video>
+        <button id="snap" style="margin-top: 10px;">Capture Image</button>
+    </div>
+    <div>
+        <canvas id="canvas" width="300" height="300" style="border:1px solid #d3d3d3;"></canvas>
+    </div>
 </div>
 <script>
     const video = document.getElementById('video');
@@ -64,28 +44,31 @@ webcam_html = """
             video.srcObject = stream;
         });
     snapButton.addEventListener('click', () => {
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
         const dataUrl = canvas.toDataURL('image/png');
         document.getElementById('image-data').value = dataUrl;
+        document.getElementById('submit-image').click();  // Automatically trigger the submit button
     });
 </script>
 """
 
 st.markdown(webcam_html, unsafe_allow_html=True)
 
-# Text area to receive base64 data
-image_data = st.text_area("Captured Image Data URL", "", placeholder="The image data will appear here after capturing.")
+# Hidden input and submit button for captured image data
+st.write('<input type="hidden" id="image-data" name="image-data">', unsafe_allow_html=True)
+submit_button = st.button("Process Captured Image", key="submit-image")
 
-if image_data:
-    image_data = image_data.split(",")[1]  # Remove the base64 header
-    image_data = base64.b64decode(image_data)
-    image = Image.open(io.BytesIO(image_data))
-    
-    # Display the image
-    st.image(image, caption="Captured Image")
+# Handling the captured image data
+if submit_button:
+    image_data_url = st.session_state.get('image_data')
+    if image_data_url:
+        image_data = image_data_url.split(",")[1]  # Remove the base64 header
+        image_data = base64.b64decode(image_data)
+        image = Image.open(io.BytesIO(image_data))
+        
+        # Display the image
+        st.image(image, caption="Captured Image")
 
-    # Process the image
-    processed_image = process_image(np.array(image))
-    st.image(processed_image, caption="Processed Image")
+        # Process the image
+        processed_image = process_image(np.array(image))
+        st.image(processed_image, caption="Processed Image")
