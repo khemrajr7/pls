@@ -87,13 +87,14 @@ def process_image(image):
         return im
 
 # Webcam capture function
-def capture_from_webcam():
-    cap = cv2.VideoCapture(0)  # Open the webcam
+def capture_from_webcam(camera_index=1):
+    cap = cv2.VideoCapture(camera_index)  # Open the external webcam (index might be 1 or higher)
     stframe = st.empty()  # Placeholder for the video frames
 
     while True:
         ret, frame = cap.read()  # Capture frame-by-frame
         if not ret:
+            st.write("Could not access the webcam.")
             break
         
         # Convert the frame to RGB (OpenCV captures in BGR)
@@ -121,4 +122,4 @@ if mode == "Upload Image":
         st.image(im, caption='Model Prediction')
 elif mode == "Use Webcam":
     st.text("Webcam capture mode")
-    capture_from_webcam()
+    capture_from_webcam(camera_index=1)  # Update the index to your external webcam's index
