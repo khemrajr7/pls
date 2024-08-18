@@ -2,14 +2,35 @@ import streamlit as st
 from PIL import Image
 from ultralytics import YOLO
 import numpy as np
-import matplotlib.pyplot as plt
 
 # Load the YOLO model
 model = YOLO('best.pt')  # Ensure this path is correct
 
-# Store detected disease counts for the chart
-detected_disease_counts = {}
-# Define a dictionary with detailed disease information
+st.title("Tomato Leaf Disease Detection")
+st.markdown("""
+*This project is a web application for detecting common tomato leaf diseases. It uses the YOLO (You Only Look Once) object detection model. The model was trained on a specific dataset including various classes of tomato leaf diseases. The model classes are as follows:
+Bacterial Spot, Early Blight, Healthy, Iron Deficiency, Late Blight, Leaf Mold, Leaf Miner, Mosaic Virus, Septoria, Spider Mites, Yellow Leaf Curl Virus.*
+""")
+
+# Upload file
+uploaded_file = st.file_uploader("Choose a tomato leaf image", type=["jpg", "png"])
+
+if uploaded_file is not None:
+    image = Image.open(uploaded_file)
+    
+    # Predict classes
+    results = model.predict(image)
+    
+    # Convert results to a format suitable for Streamlit display
+    for result in results:
+        im_array = result.plot()  # Plot a BGR numpy array of predictions
+        im = Image.fromarray(im_array[..., ::-1])  # Convert BGR to RGB
+        st.image(im, caption='Model Prediction')  # Show image with prediction
+        
+        # Optionally, you can save the image as well
+        im.save('results.jpg')
+
+# Now let's add the disease info and integrate other improvements
 disease_info = {
     "Bacterial Spot": {
         "cause": "Caused by the bacterium Xanthomonas campestris pv. vesicatoria.",
@@ -79,7 +100,6 @@ disease_info = {
     }
 }
 
-# Function to display disease information
 def display_disease_info(detected_class):
     if detected_class in disease_info:
         st.subheader(f"Disease Detected: {detected_class}")
@@ -91,64 +111,18 @@ def display_disease_info(detected_class):
         st.subheader(f"Disease Detected: {detected_class}")
         st.markdown("No information available for this disease.")
 
-# Streamlit App Layout
-st.title("Tomato Leaf Disease Detection")
-st.markdown("""
-*This project is a web application for detecting common tomato leaf diseases. It uses the YOLO (You Only Look Once) object detection model. The model was trained on a specific dataset including various classes of tomato leaf diseases. The model classes are as follows:
-Bacterial Spot, Early Blight, Healthy, Iron Deficiency, Late Blight, Leaf Mold, Leaf Miner, Mosaic Virus, Septoria, Spider Mites, Yellow Leaf Curl Virus.*
-""")
-
-# Upload file
-uploaded_file = st.file_uploader("Choose a tomato leaf image", type=["jpg", "png"])
-
 if uploaded_file is not None:
-    image = Image.open(uploaded_file)
-    
-    # Display the uploaded image
-    st.image(image, caption="Uploaded Image", use_column_width=True)
-
     # Predict classes
-    results = model(np.array(image))
-    
+    results = model.predict(image)
+
     # Convert results to a format suitable for Streamlit display
-    im_array = results[0].plot()  # Plot a BGR numpy array of predictions
-    im = Image.fromarray(im_array[..., ::-1])  # Convert BGR to RGB
-    st.image(im, caption='Model Prediction', use_column_width=True)
-
-    # Extract and display disease information
-    if len(results[0].boxes) > 0:
-        detected_class_index = int(results[0].boxes[0].cls[0])  # Extract the index of the predicted class
-        detected_class = results[0].names.get(detected_class_index, "Unknown")  # Safely get the class name
+    for result in results:
+        im_array = result.plot()  # Plot a BGR numpy array of predictions
+        im = Image.fromarray(im_array[..., ::-1])  # Convert BGR to RGB
+        st.image(im, caption='Model Prediction')  # Show image with prediction
         
-        # Increment disease count
-        if detected_class in detected_disease_counts:
-            detected_disease_counts[detected_class] += 1
-        else:
-            detected_disease_counts[detected_class] = 1
-
-        display_disease_info(detected_class)
-    else:
-        st.subheader("No disease detected.")
-
-    # Optionally, you can save the image
-    im.save('results.jpg')
-
-    # Summary of processed image
-    st.success("Image processed successfully!")
-
-    # Optional: Provide download link for results image
-    with open("results.jpg", "rb") as file:
-        btn = st.download_button(
-            label="Download Processed Image",
-            data=file,
-            file_name="processed_image.jpg",
-            mime="image/jpeg"
-        )
-
-  
-
-# Add a sidebar with additional options
-st.sidebar.header("More Information")
-st.sidebar.markdown("""
-This tool is designed to assist farmers and agricultural experts in detecting and managing common tomato leaf diseases.
-""")
+        # Extract and display disease information
+    
+        
+        # Optionally, you can save the image as well
+        im.save('results.jpg')
