@@ -1,6 +1,5 @@
 import streamlit as st
 from PIL import Image
-import cv2
 import numpy as np
 from ultralytics import YOLO
 
@@ -12,25 +11,18 @@ st.markdown("""
 This project is a web application for detecting common tomato leaf diseases. It uses the YOLO (You Only Look Once) object detection model.
 """)
 
-# Webcam capture function
-def capture_webcam():
-    cap = cv2.VideoCapture(0)
-    ret, frame = cap.read()
-    cap.release()
-    if ret:
-        return frame
-    else:
-        st.warning("Could not access webcam.")
-        return None
+# Upload file
+uploaded_file = st.file_uploader("Choose a tomato leaf image", type=["jpg", "png"])
 
-# Display webcam feed and capture button
-if st.button("Capture Image from Webcam"):
-    captured_image = capture_webcam()
-    if captured_image is not None:
-        st.image(captured_image, channels="BGR", caption="Captured Image")
-        
-        # Process the captured image with YOLO
-        results = model(captured_image)
-        
-        # Display the processed image
-        st.image(results[0].plot(), caption="Processed Image with Predictions", use_column_width=True)
+if uploaded_file is not None:
+    image = Image.open(uploaded_file)
+    
+    # Display the uploaded image
+    st.image(image, caption="Uploaded Image", use_column_width=True)
+    
+    # Convert image to array and run it through YOLO
+    image_array = np.array(image)
+    results = model(image_array)
+    
+    # Display the predictions
+    st.image(results[0].plot(), caption="Processed Image with Predictions", use_column_width=True)
