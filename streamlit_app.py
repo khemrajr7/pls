@@ -6,22 +6,13 @@ import base64
 import io
 
 # Load the YOLO model
-model = YOLO('best.pt')  # Make sure to specify the correct path to your trained YOLO model
+model = YOLO('best.pt')  # Ensure the correct path to your YOLO model is provided
 
 st.title("Tomato Leaf Disease Detection")
 st.markdown("""
 *This project is a web application for detecting common tomato leaf diseases. It uses the YOLO (You Only Look Once) object detection model. The model was trained on a specific dataset including various classes of tomato leaf diseases. The model classes are as follows:
 Bacterial Spot, Early Blight, Healthy, Iron Deficiency, Late Blight, Leaf Mold, Leaf Miner, Mosaic Virus, Septoria, Spider Mites, Yellow Leaf Curl Virus.*
 """)
-
-# Define a dictionary with disease information
-disease_info = {
-    "Bacterial Spot": {
-        "cure": "Apply copper-based bactericides. Ensure proper crop rotation and avoid overhead watering.",
-        "info": "Bacterial spot causes dark, water-soaked spots on leaves and can lead to defoliation."
-    },
-    # Add other disease information here...
-}
 
 # HTML and JS code to access the webcam and take a photo
 webcam_html = """
@@ -46,29 +37,61 @@ webcam_html = """
     snapButton.addEventListener('click', () => {
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
         const dataUrl = canvas.toDataURL('image/png');
-        document.getElementById('image-data').value = dataUrl;
-        document.getElementById('submit-image').click();  // Automatically trigger the submit button
+        const imageDataElement = document.getElementById('image-data');
+        imageDataElement.value = dataUrl;
+        imageDataElement.dispatchEvent(new Event('input', { bubbles: true }));
     });
 </script>
 """
 
+# Embed the HTML for webcam and capture button
 st.markdown(webcam_html, unsafe_allow_html=True)
 
-# Hidden input and submit button for captured image data
-st.write('<input type="hidden" id="image-data" name="image-data">', unsafe_allow_html=True)
-submit_button = st.button("Process Captured Image", key="submit-image")
+# Hidden text area to hold the image data
+image_data = st.text_area("Captured Image Data URL", "", key="image-data")
 
-# Handling the captured image data
-if submit_button:
-    image_data_url = st.session_state.get('image_data')
-    if image_data_url:
-        image_data = image_data_url.split(",")[1]  # Remove the base64 header
-        image_data = base64.b64decode(image_data)
-        image = Image.open(io.BytesIO(image_data))
+# Process the image once captured
+if image_data:
+    image_data = image_data.split(",")[1]  # Remove the base64 header
+    image_data = base64.b64decode(image_data)
+    image = Image.open(io.BytesIO(image_data))
+    
+    # Display the captured image
+    st.image(image, caption="Captured Image")
+    
+    # Process the image using YOLO
+    processed_image = process_image(np.array(image))
+    st.image(processed_image, caption="Processed Image")
+
+# Function to process the image and make predictions
+def process_image(image):
+    results = model(image)
+    for result in results:
+        im_array = result.plot()  # Plot a BGR numpy array of predictions
+        im = Image.fromarray(im_array[..., ::-1])  # Convert BGR to RGB
         
-        # Display the image
-        st.image(image, caption="Captured Image")
+        if len(result.boxes) > 0:
+            detected_class_index = int(result.boxes[0].cls[0])  # Extract the index of the predicted class
+            detected_class = result.names.get(detected_class_index, "Unknown")  # Safely get the class name
+            
+            if detected_class in disease_info:
+                cure = disease_info[detected_class]["cure"]
+                info = disease_info[detected_class]["info"]
+                st.subheader(f"Disease Detected: {detected_class}")
+                st.markdown(f"**Cure:** {cure}")
+                st.markdown(f"**Additional Info:** {info}")
+            else:
+                st.subheader(f"Disease Detected: {detected_class}")
+                st.markdown("No information available for this disease.")
+        else:
+            st.subheader("No disease detected.")
+        return im
 
-        # Process the image
-        processed_image = process_image(np.array(image))
-        st.image(processed_image, caption="Processed Image")
+# Disease information dictionary
+disease_info = {
+    "Bacterial Spot": {
+        "cure": "Apply copper-based bactericides. Ensure proper crop rotation and avoid overhead watering.",
+        "info": "Bacterial spot causes dark, water-soaked spots on leaves and can lead to defoliation."
+    },
+    # Add more diseases and their corresponding information here...
+}
