@@ -1,8 +1,11 @@
 import streamlit as st
 from PIL import Image
-from ultralytics import YOLO
 import cv2
 import numpy as np
+from ultralytics import YOLO
+import tempfile
+import os
+import base64
 
 # Load the YOLO model
 model = YOLO('best.pt')  # Make sure to specify the correct path to your trained YOLO model
@@ -12,15 +15,6 @@ st.markdown("""
 *This project is a web application for detecting common tomato leaf diseases. It uses the YOLO (You Only Look Once) object detection model. The model was trained on a specific dataset including various classes of tomato leaf diseases. The model classes are as follows:
 Bacterial Spot, Early Blight, Healthy, Iron Deficiency, Late Blight, Leaf Mold, Leaf Miner, Mosaic Virus, Septoria, Spider Mites, Yellow Leaf Curl Virus.*
 """)
-
-# Define a dictionary with disease information
-disease_info = {
-    "Bacterial Spot": {
-        "cure": "Apply copper-based bactericides. Ensure proper crop rotation and avoid overhead watering.",
-        "info": "Bacterial spot causes dark, water-soaked spots on leaves and can lead to defoliation."
-    },
-    # Add other disease information here...
-}
 
 # Function to process the image and make predictions
 def process_image(image):
@@ -46,45 +40,72 @@ def process_image(image):
             st.subheader("No disease detected.")
         return im
 
-# Webcam capture function
-def capture_from_webcam(camera_index=0):
-    cap = cv2.VideoCapture(camera_index)  # Use the working camera index found in the test
+# Define a dictionary with disease information
+disease_info = {
+    "Bacterial Spot": {
+        "cure": "Apply copper-based bactericides. Ensure proper crop rotation and avoid overhead watering.",
+        "info": "Bacterial spot causes dark, water-soaked spots on leaves and can lead to defoliation."
+    },
+    # Add other disease information here...
+}
+
+# HTML and JS code to access the webcam and take a photo
+webcam_html = """
+<div>
+    <video id="video" width="100%" height="100%" autoplay></video>
+    <button id="snap">Capture Image</button>
+    <canvas id="canvas" style="display:none;"></canvas>
+</div>
+<script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const snapButton = document.getElementById('snap');
+    const context = canvas.getContext('2d');
+    navigator.mediaDevices.getUserMedia({ video: true })
+        .then((stream) => {
+            video.srcObject = stream;
+        });
+    snapButton.addEventListener('click', () => {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL('image/png');
+        fetch('/', {
+            method: 'POST',
+            body: JSON.stringify({ image: dataUrl }),
+            headers: { 'Content-Type': 'application/json' }
+        }).then(response => response.json())
+          .then(data => {
+              console.log(data);
+              window.location.reload();
+          });
+    });
+</script>
+"""
+
+st.markdown(webcam_html, unsafe_allow_html=True)
+
+# Handling the image data received from JavaScript
+if "image" in st.session_state:
+    image_data = st.session_state.image
+    image_data = image_data.split(",")[1]  # Remove the data URL prefix
+    image_data = base64.b64decode(image_data)
+    image = Image.open(io.BytesIO(image_data))
+
+    # Save the image temporarily
+    temp_image = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
+    image.save(temp_image.name)
     
-    if not cap.isOpened():
-        st.error("Could not access the webcam. Please check the camera index or connection.")
-        return
-    
-    stframe = st.empty()  # Placeholder for the video frames
+    # Process the image with the YOLO model
+    st.image(image, caption="Captured Image")
+    processed_image = process_image(np.array(image))
+    st.image(processed_image, caption="Processed Image")
 
-    while True:
-        ret, frame = cap.read()  # Capture frame-by-frame
-        if not ret:
-            st.error("Failed to capture image from webcam. Please try again.")
-            break
-        
-        # Convert the frame to RGB (OpenCV captures in BGR)
-        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        
-        # Process the frame
-        im = process_image(frame_rgb)
-        
-        # Display the frame
-        stframe.image(im, channels="RGB")
-        
-        if st.button("Stop"):
-            break
+# Handle POST request to receive image data
+@st.experimental_memo
+def handle_post_request():
+    import json
+    if st.experimental_get_query_params().get("image"):
+        st.session_state["image"] = st.experimental_get_query_params()["image"][0]
 
-    cap.release()  # Release the webcam when done
-
-# Sidebar for mode selection
-mode = st.sidebar.selectbox("Choose the mode", ["Upload Image", "Use Webcam"])
-
-if mode == "Upload Image":
-    uploaded_file = st.file_uploader("Choose a tomato leaf image", type=["jpg", "png"])
-    if uploaded_file is not None:
-        image = Image.open(uploaded_file)
-        im = process_image(np.array(image))
-        st.image(im, caption='Model Prediction')
-elif mode == "Use Webcam":
-    st.text("Webcam capture mode")
-    capture_from_webcam(camera_index=0)  # Using the correct index
+handle_post_request()
