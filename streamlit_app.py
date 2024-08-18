@@ -48,7 +48,7 @@ def process_image(image):
 
 # Webcam capture function
 def capture_from_webcam(camera_index=0):
-    cap = cv2.VideoCapture(camera_index)  # Try different indices if this doesn't work (0, 1, 2, ...)
+    cap = cv2.VideoCapture(camera_index)  # Use the working camera index found in the test
     
     if not cap.isOpened():
         st.error("Could not access the webcam. Please check the camera index or connection.")
@@ -87,4 +87,4 @@ if mode == "Upload Image":
         st.image(im, caption='Model Prediction')
 elif mode == "Use Webcam":
     st.text("Webcam capture mode")
-    capture_from_webcam(camera_index=0)  # Try changing this index if it doesn't work
+    capture_from_webcam(camera_index=0)  # Using the correct index
