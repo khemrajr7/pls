@@ -8,7 +8,7 @@ model = YOLO('best.pt')  # Ensure this path is correct
 
 st.title("Tomato Leaf Disease Detection")
 st.markdown("""
-*This project is a web application for detecting common tomato leaf diseases. It uses the YOLO (You Only Look Once) object detection model. The model was trained on a specific dataset including various classes of tomato leaf diseases. The model classes are as follows:
+*This project is a web application for detecting common tomato leaf diseases.The model was trained on a specific dataset including various classes of tomato leaf diseases. The model classes are as follows:
 Bacterial Spot, Early Blight, Healthy, Iron Deficiency, Late Blight, Leaf Mold, Leaf Miner, Mosaic Virus, Septoria, Spider Mites, Yellow Leaf Curl Virus.*
 """)
 
